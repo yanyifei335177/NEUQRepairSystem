@@ -1,253 +1,87 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NEUQ电子设备维修</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }
-    header { background: #004080; color: white; padding: 15px; text-align: center; font-size: 22px; font-weight: bold; }
-    .container { max-width: 1000px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-    .hidden { display: none; }
-    .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; }
-    .btn-confirm { background: #4caf50; color: white; }
-    .btn-reject { background: #f44336; color: white; }
-    .btn-delete { background: #555; color: white; }
-    .btn-add { background: #2196f3; color: white; margin-bottom: 10px; }
-    .status-pending { color: red; font-weight: bold; }
-    .status-confirmed { color: green; font-weight: bold; }
-    .status-rejected { color: orange; font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    th { background: #eee; }
-    input, select, textarea { width: 100%; padding: 6px; margin: 5px 0; }
-    #chart { width: 100%; height: 300px; }
-    #login, #adminPanel, #clientPanel { display: none; }
-  </style>
+<meta charset="UTF-8">
+<title>NEUQ电子设备维修</title>
+<style>
+body{font-family:Arial;margin:20px;}
+h1{color:#333;}
+input, select, textarea{margin:5px 0;width:300px;}
+button{margin:5px;}
+table{border-collapse:collapse;width:90%;}
+th, td{border:1px solid #ccc;padding:5px;text-align:center;}
+.status-pending{color:red;}
+.status-confirmed{color:green;}
+.status-rejected{color:orange;}
+.status-completed{color:blue;}
+</style>
 </head>
 <body>
-  <header>NEUQ电子设备维修系统</header>
 
-  <div class="container" id="login">
-    <h2>管理员登录</h2>
-    <input id="adminUser" placeholder="账号" />
-    <input id="adminPass" type="password" placeholder="密码" />
-    <button class="btn btn-confirm" onclick="login()">登录</button>
-  </div>
+<h1>NEUQ电子设备维修 - 客户端</h1>
+<div>
+<h2>提交申请</h2>
+<label>姓名:<input type="text" id="name"></label><br>
+<label>手机号:<input type="text" id="phone"></label><br>
+<label>QQ邮箱:<input type="text" id="email"></label><br>
+<label>需求:
+<select id="service">
+<option>电脑清灰</option>
+<option>手机贴膜</option>
+<option>小电子设备维修</option>
+<option>其他</option>
+</select></label><br>
+<label>问题描述:<textarea id="description"></textarea></label><br>
+<!-- 照片上传功能可在这里添加 -->
+<label>预约时间:<input type="datetime-local" id="date"></label><br>
+<label>地点:
+<select id="location">
+<option>工学馆</option>
+<option>鹏四4331</option>
+<option>校五5508</option>
+</select></label><br>
+<button onclick="submitRepair()">提交</button>
+</div>
 
-  <div class="container" id="clientPanel">
-    <h2>客户申请维修</h2>
-    <div>
-      <input id="name" placeholder="姓名" />
-      <input id="phone" placeholder="手机号（随机可）" />
-      <input id="email" placeholder="QQ邮箱" />
-      <select id="service">
-        <option value="电脑清灰">电脑清灰</option>
-        <option value="手机贴膜">手机贴膜</option>
-        <option value="小电子设备维修">小电子设备维修</option>
-        <option value="其他">其他</option>
-      </select>
-      <textarea id="description" placeholder="问题描述"></textarea>
-      <!-- 📸 此处可加上传照片按钮 -->
-      <input id="date" type="datetime-local" />
-      <select id="location">
-        <option value="工学馆">工学馆</option>
-        <option value="鹏四4331">鹏四4331</option>
-        <option value="校五5508">校五5508</option>
-      </select>
-      <button class="btn btn-add" onclick="submitRepair()">提交申请</button>
-    </div>
+<hr>
 
-    <h3>申请记录</h3>
-    <table id="clientTable">
-      <thead>
-        <tr>
-          <th>编号</th><th>服务类型</th><th>描述</th><th>预约时间</th>
-          <th>地点</th><th>状态</th><th>驳回原因</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+<h2>我的维修申请</h2>
+<table id="repairsTable">
+<tr><th>ID</th><th>姓名</th><th>服务</th><th>状态</th><th>原因</th></tr>
+</table>
 
-    <button class="btn" onclick="switchToAdmin()">后台登录</button>
-  </div>
-
-  <div class="container" id="adminPanel">
-    <h2>后台管理</h2>
-    <button class="btn btn-add" onclick="loadRepairs()">刷新数据</button>
-    <button class="btn" onclick="showChart()">查看统计图表</button>
-
-    <h3>待确认申请 <span id="pendingCount" style="color:red"></span></h3>
-    <table id="pendingTable">
-      <thead>
-        <tr><th>ID</th><th>姓名</th><th>服务</th><th>描述</th><th>时间</th><th>操作</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <h3>待维修</h3>
-    <table id="confirmedTable">
-      <thead>
-        <tr><th>ID</th><th>姓名</th><th>服务</th><th>描述</th><th>时间</th><th>操作</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div id="chartContainer" class="hidden">
-      <h3>各类维修已完成数量统计</h3>
-      <canvas id="chart"></canvas>
-    </div>
-
-    <button class="btn" onclick="switchToClient()">返回客户端</button>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    const api = (url, method = "GET", data = null) => {
-      return fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: data ? JSON.stringify(data) : null
-      }).then(r => r.json());
-    };
-
-    // 初始显示
-    document.getElementById("clientPanel").style.display = "block";
-
-    async function submitRepair() {
-      const data = {
-        name: document.getElementById("name").value || "匿名",
-        phone: document.getElementById("phone").value || "1" + Math.floor(3000000000 + Math.random() * 6000000000),
-        email: document.getElementById("email").value || "test@qq.com",
-        service: document.getElementById("service").value,
-        description: document.getElementById("description").value,
-        date: document.getElementById("date").value,
-        location: document.getElementById("location").value
-      };
-      await api("/api/repairs", "POST", data);
-      alert("提交成功！");
-      loadClientTable();
-    }
-
-    async function loadClientTable() {
-      const res = await api("/api/repairs");
-      const tbody = document.querySelector("#clientTable tbody");
-      tbody.innerHTML = "";
-      res.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.id}</td>
-          <td>${r.service}</td>
-          <td>${r.description}</td>
-          <td>${r.date}</td>
-          <td>${r.location}</td>
-          <td class="status-${r.status}">${r.status}</td>
-          <td>${r.reason || ""}</td>
-        `;
-        tbody.appendChild(tr);
+<script>
+function loadRepairs(){
+  fetch("/api/repairs")
+    .then(res=>res.json())
+    .then(data=>{
+      const table=document.getElementById("repairsTable");
+      table.innerHTML='<tr><th>ID</th><th>姓名</th><th>服务</th><th>状态</th><th>原因</th></tr>';
+      data.forEach(r=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML=`<td>${r.id}</td>
+        <td>${r.name}</td>
+        <td>${r.service}</td>
+        <td class="status-${r.status}">${r.status}</td>
+        <td>${r.reason||""}</td>`;
+        table.appendChild(tr);
       });
-    }
-
-    loadClientTable();
-
-    // 后台登录
-    async function login() {
-      const user = document.getElementById("adminUser").value;
-      const pass = document.getElementById("adminPass").value;
-      try {
-        const res = await api("/api/admin/login", "POST", { user, pass });
-        if (res.ok) {
-          alert("登录成功！");
-          document.getElementById("login").style.display = "none";
-          document.getElementById("clientPanel").style.display = "none";
-          document.getElementById("adminPanel").style.display = "block";
-          loadRepairs();
-        }
-      } catch {
-        alert("账号或密码错误");
-      }
-    }
-
-    async function loadRepairs() {
-      const res = await api("/api/repairs");
-      const pending = res.filter(r => r.status === "pending");
-      const confirmed = res.filter(r => r.status === "confirmed");
-      const pendingBody = document.querySelector("#pendingTable tbody");
-      const confirmedBody = document.querySelector("#confirmedTable tbody");
-      pendingBody.innerHTML = confirmedBody.innerHTML = "";
-
-      document.getElementById("pendingCount").textContent = pending.length ? `(${pending.length}条)` : "";
-
-      pending.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.id}</td><td>${r.name}</td><td>${r.service}</td><td>${r.description}</td><td>${r.date}</td>
-          <td>
-            <button class="btn btn-confirm" onclick="confirmRepair(${r.id})">确认</button>
-            <button class="btn btn-reject" onclick="rejectRepair(${r.id})">驳回</button>
-          </td>`;
-        pendingBody.appendChild(tr);
-      });
-
-      confirmed.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${r.id}</td><td>${r.name}</td><td>${r.service}</td><td>${r.description}</td><td>${r.date}</td>
-          <td>
-            <button class="btn btn-delete" onclick="completeRepair(${r.id})">维修完成(删除)</button>
-          </td>`;
-        confirmedBody.appendChild(tr);
-      });
-    }
-
-    async function confirmRepair(id) {
-      await api(`/api/repairs/${id}/confirm`, "POST");
-      loadRepairs();
-    }
-
-    async function rejectRepair(id) {
-      const reason = prompt("请输入驳回原因：");
-      if (!reason) return;
-      await api(`/api/repairs/${id}/reject`, "POST", { reason });
-      loadRepairs();
-    }
-
-    async function completeRepair(id) {
-      await api(`/api/repairs/${id}/complete`, "POST");
-      await api(`/api/repairs/${id}`, "DELETE"); // 删除数据库记录
-      loadRepairs();
-      loadClientTable();
-    }
-
-    function switchToAdmin() {
-      document.getElementById("clientPanel").style.display = "none";
-      document.getElementById("login").style.display = "block";
-    }
-
-    function switchToClient() {
-      document.getElementById("adminPanel").style.display = "none";
-      document.getElementById("clientPanel").style.display = "block";
-      loadClientTable();
-    }
-
-    async function showChart() {
-      const res = await api("/api/repairs");
-      const completed = res.filter(r => r.status === "completed");
-      const data = { "电脑清灰": 0, "手机贴膜": 0, "小电子设备维修": 0, "其他": 0 };
-      completed.forEach(r => { if (data[r.service] !== undefined) data[r.service]++; });
-      const ctx = document.getElementById("chart").getContext("2d");
-      document.getElementById("chartContainer").classList.remove("hidden");
-      new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: Object.keys(data),
-          datasets: [{
-            label: "已完成维修数量",
-            data: Object.values(data)
-          }]
-        }
-      });
-    }
-  </script>
+    });
+}
+function submitRepair(){
+  const data={
+    name:document.getElementById("name").value,
+    phone:document.getElementById("phone").value,
+    email:document.getElementById("email").value,
+    service:document.getElementById("service").value,
+    description:document.getElementById("description").value,
+    date:document.getElementById("date").value,
+    location:document.getElementById("location").value
+  };
+  fetch("/api/repairs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)})
+  .then(res=>res.json()).then(r=>{alert("提交成功"); loadRepairs();});
+}
+loadRepairs();
+</script>
 </body>
 </html>
